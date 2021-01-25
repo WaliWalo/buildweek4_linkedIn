@@ -44,4 +44,4 @@ mongoose
       console.log("Running on port", port);
     })
   )
-  .catch((err) => console.log(err));
+  .catch(err => console.log(err));
