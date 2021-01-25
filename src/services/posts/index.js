@@ -1,14 +1,27 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const PostModel = require("./schema");
+const UserModel = require("../profiles/schema");
 const postsRouter = express.Router();
+const cloudinary = require("../cloudinary.js")
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
 // - POST https://yourapi.herokuapp.com/api/posts/
 //     Creates a new post
-postsRouter.post("/", async (req, res, next) => {
+postsRouter.post("/:userId/", async (req, res, next) => {
   try {
-    res.status(201).send("POST");
+    //GET USER
+    const userId = req.params.userId
+    const user = await UserModel.findById(userId)
+    //POST
+    let body = {...req.body, user: new mongoose.Types.ObjectId(req.params.userId)
+    }
+    const newPost = new PostModel(body),
+        {_id} = await newPost.save()
+    res.status(201).send(newPost);
   } catch (error) {
+    console.log(error)
     next(error);
   }
 });
@@ -17,7 +30,18 @@ postsRouter.post("/", async (req, res, next) => {
 //     Retrieve posts
 postsRouter.get("/", async (req, res, next) => {
   try {
-    res.status(201).send("GET");
+    let posts
+    if (req.query && req.query.userId) {
+      //GET USER
+      const userId = req.query.userId
+      // const user = await UserModel.findById(userId)
+      console.log(userId)
+      posts = await PostModel.find({user : userId}).populate('user')
+    } else {
+      posts = await PostModel.find()
+    } 
+    //GET POSTS
+    res.status(201).send(posts);
   } catch (error) {
     next(error);
   }
@@ -27,7 +51,8 @@ postsRouter.get("/", async (req, res, next) => {
 // Retrieves the specified post
 postsRouter.get("/:postId", async (req, res, next) => {
   try {
-    res.status(201).send("GET BY ID");
+    const post = await PostModel.findById(req.params.postId)
+    res.status(201).send(post);
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -44,7 +69,17 @@ postsRouter.get("/:postId", async (req, res, next) => {
 // Edit a given post
 postsRouter.put("/:postId", async (req, res, next) => {
   try {
-    res.status(201).send("UPDATE BY ID");
+    const post = await PostModel.findByIdAndUpdate(req.params.postId, req.body, {
+      runValidators: true,
+      new: true,
+    })
+    if (post) {
+      res.send(post)
+    } else {
+      const error = new Error(`post with id ${req.params.id} not found`)
+      error.httpStatusCode = 404
+      next(error)
+    }
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -61,7 +96,14 @@ postsRouter.put("/:postId", async (req, res, next) => {
 // Removes a post
 postsRouter.delete("/:postId", async (req, res, next) => {
   try {
-    res.status(201).send("DELETE BY ID");
+    const deletePost = await Posts.findByIdAndDelete(req.params.postId)
+    if (deletePost) {
+      res.send("DELETE BY ID");
+    } else {
+      const err = new Error(`Post with id : ${req.params.postId}`);
+      err.httpStatusCode = 404
+      next(err);
+    }
   } catch (error) {
     next(error);
   }
@@ -69,9 +111,26 @@ postsRouter.delete("/:postId", async (req, res, next) => {
 
 // - POST https://yourapi.herokuapp.com/api/posts/{postId}
 // Add an image to the post under the name of "post"
-postsRouter.post("/:postId/picture", async (req, res, next) => {
+const postStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: `${process.env.CLOUDINARY_FOLDER}`,
+    use_filename: true,
+    public_id : (req, file) => {return file.originalname}
+  }
+})
+const uploadPost = multer({ storage : postStorage})
+
+postsRouter.post("/:postId/picture", uploadPost.single('post'), async (req, res, next) => {
   try {
-    res.status(201).send("POST A PICTURE BY ID");
+    //GET POST
+    const post = await PostModel.findById(req.params.postId)
+    let body = { ...post.toObject, image: req.file.path }
+    const postWithImage = await PostModel.findByIdAndUpdate(req.params.postId, body, {
+      runValidators: true,
+      new: true
+    })
+    res.status(201).send(postWithImage);
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {

@@ -23,9 +23,16 @@ const { Schema, model } = require("mongoose");
 // }
 const PostSchema = new Schema(
   {
-    name: {
+    text: {
       type: String,
       required: true,
+    },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "Profile",
+    },
+    image: {
+      type: String
     },
   },
   {
