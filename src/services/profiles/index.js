@@ -130,24 +130,24 @@ profilesRouter.post(
 
 // - GET https://yourapi.herokuapp.com/api/profile/{userId}/CV
 // Generates and download a PDF with the CV of the user (details, picture, experiences)
-profilesRouter.get("/:profileId/cv", pdfController.download);
+// profilesRouter.get("/:profileId/cv", pdfController.download);
 
-profilesRouter.delete("/:profileId", async (req, res, next) => {
-  try {
-    const selectedProfile = await UserModel.findByIdAndDelete(
-      req.params.profileId
-    );
+// profilesRouter.delete("/:profileId", async (req, res, next) => {
+//   try {
+//     const selectedProfile = await UserModel.findByIdAndDelete(
+//       req.params.profileId
+//     );
 
-    if (selectedProfile) {
-      res.send("Profile deleted!");
-    } else {
-      res.send("Profile not found");
-    }
+//     if (selectedProfile) {
+//       res.send("Profile deleted!");
+//     } else {
+//       res.send("Profile not found");
+//     }
 
-    res.status(201).send("DELETE BY ID");
-  } catch (error) {
-    next(error);
-  }
-});
+//     res.status(201).send("DELETE BY ID");
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 module.exports = profilesRouter;
