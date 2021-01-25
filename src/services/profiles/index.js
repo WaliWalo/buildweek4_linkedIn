@@ -3,21 +3,44 @@ const mongoose = require("mongoose");
 const UserModel = require("./schema");
 const profilesRouter = express.Router();
 
+const multer = require("multer");
+const cloudinary = require("../cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "User Images",
+  },
+});
+
+const cloudinaryMulter = multer({ storage: storage });
+
 // - POST https://yourapi.herokuapp.com/api/profile/
 // Create the user profile with all his details
-profilesRouter.post("/", async (req, res, next) => {
-  try {
-    res.status(201).send("POST");
-  } catch (error) {
-    next(error);
+profilesRouter.post(
+  "/",
+  cloudinaryMulter.single("image"),
+  async (req, res, next) => {
+    try {
+      console.log("req file", req.file.path);
+      const newProfile = new UserModel(req.body);
+      newProfile.image = req.file.path;
+      const { _id } = await newProfile.save();
+      res.status(201).send(_id);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 // - GET https://yourapi.herokuapp.com/api/profile/
 //     Retrieves list of profiles
 profilesRouter.get("/", async (req, res, next) => {
   try {
-    res.status(201).send("GET");
+    const allUsers = await UserModel.find();
+
+    res.status(201).send(allUsers);
   } catch (error) {
     next(error);
   }
@@ -28,7 +51,9 @@ profilesRouter.get("/", async (req, res, next) => {
 //     Retrieves the profile with userId = {userId}
 profilesRouter.get("/:profileId", async (req, res, next) => {
   try {
-    res.status(201).send("GET BY ID");
+    const selectedProfile = await UserModel.findById(req.params.profileId);
+
+    res.status(201).send(selectedProfile);
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -45,7 +70,17 @@ profilesRouter.get("/:profileId", async (req, res, next) => {
 //     Update current user profile details
 profilesRouter.put("/:profileId", async (req, res, next) => {
   try {
-    res.status(201).send("UPDATE BY ID");
+    const selectedProfile = await UserModel.findByIdAndUpdate(
+      req.params.profileId,
+      req.body,
+      { runValidators: true, new: true }
+    );
+
+    if (selectedProfile) {
+      res.status(201).send(selectedProfile);
+    } else {
+      res.send("This profile doesn't exists");
+    }
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -60,9 +95,13 @@ profilesRouter.put("/:profileId", async (req, res, next) => {
 
 // - POST https://yourapi.herokuapp.com/api/profile/{userId}/picture
 // Replace user profile picture (name = profile)
-profilesRouter.post("/:profileId/picture", async (req, res, next) => {
+profilesRouter.get("/:profileId/picture/", async (req, res, next) => {
   try {
-    res.status(201).send("POST PICTURE BY ID");
+    //The profile we take
+    const selectedProfile = await UserModel.findById(req.params.profileId);
+    const selectedImage = selectedProfile.image;
+
+    res.status(201).send(selectedImage);
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -94,6 +133,16 @@ profilesRouter.get("/:profileId/cv", async (req, res, next) => {
 
 profilesRouter.delete("/:profileId", async (req, res, next) => {
   try {
+    const selectedProfile = await UserModel.findByIdAndDelete(
+      req.params.profileId
+    );
+
+    if (selectedProfile) {
+      res.send("Profile deleted!");
+    } else {
+      res.send("Profile not found");
+    }
+
     res.status(201).send("DELETE BY ID");
   } catch (error) {
     next(error);
