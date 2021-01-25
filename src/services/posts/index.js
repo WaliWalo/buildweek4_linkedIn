@@ -1,8 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const PostModel = require("./schema");
-const UserModel = require("../profiles/schema")
+const UserModel = require("../profiles/schema");
 const postsRouter = express.Router();
+const cloudinary = require("../cloudinary.js")
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
 // - POST https://yourapi.herokuapp.com/api/posts/
 //     Creates a new post
@@ -12,7 +15,8 @@ postsRouter.post("/:userId/", async (req, res, next) => {
     const userId = req.params.userId
     const user = await UserModel.findById(userId)
     //POST
-    let body = {...req.body, user: user}
+    let body = {...req.body, user: new mongoose.Types.ObjectId(req.params.userId)
+    }
     const newPost = new PostModel(body),
         {_id} = await newPost.save()
     res.status(201).send(newPost);
@@ -30,8 +34,9 @@ postsRouter.get("/", async (req, res, next) => {
     if (req.query && req.query.userId) {
       //GET USER
       const userId = req.query.userId
-      const user = await UserModel.findById(userId)
-      posts = await PostModel.find({user : userId})
+      // const user = await UserModel.findById(userId)
+      console.log(userId)
+      posts = await PostModel.find({user : userId}).populate('user')
     } else {
       posts = await PostModel.find()
     } 
@@ -106,9 +111,26 @@ postsRouter.delete("/:postId", async (req, res, next) => {
 
 // - POST https://yourapi.herokuapp.com/api/posts/{postId}
 // Add an image to the post under the name of "post"
-postsRouter.post("/:postId/picture", async (req, res, next) => {
+const postStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: `${process.env.CLOUDINARY_FOLDER}`,
+    use_filename: true,
+    public_id : (req, file) => {return file.originalname}
+  }
+})
+const uploadPost = multer({ storage : postStorage})
+
+postsRouter.post("/:postId/picture", uploadPost.single('post'), async (req, res, next) => {
   try {
-    res.status(201).send("POST A PICTURE BY ID");
+    //GET POST
+    const post = await PostModel.findById(req.params.postId)
+    let body = { ...post.toObject, image: req.file.path }
+    const postWithImage = await PostModel.findByIdAndUpdate(req.params.postId, body, {
+      runValidators: true,
+      new: true
+    })
+    res.status(201).send(postWithImage);
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
