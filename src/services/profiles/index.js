@@ -100,14 +100,19 @@ profilesRouter.post(
   cloudinaryMulter.single("image"),
   async (req, res, next) => {
     try {
+      //*FINDBYID the profile through ID
       const profile = await UserModel.findById(req.params.profileId);
 
+      //*IF exists
       if (profile) {
+        //*FIND the profile and update
+        //it finds a document with the same SCHEMA and the same ID and UPDATE
         const updateProfile = await UserModel.findByIdAndUpdate(
           req.params.profileId,
           { $set: { image: req.file.path } },
           { new: true, useFindAndModify: false }
         );
+        //*SEND the profile updated
         res.status(201).send(updateProfile);
       } else {
         let error = new Error("EXPERIENCE NOT FOUND");
@@ -132,22 +137,22 @@ profilesRouter.post(
 // Generates and download a PDF with the CV of the user (details, picture, experiences)
 // profilesRouter.get("/:profileId/cv", pdfController.download);
 
-// profilesRouter.delete("/:profileId", async (req, res, next) => {
-//   try {
-//     const selectedProfile = await UserModel.findByIdAndDelete(
-//       req.params.profileId
-//     );
+profilesRouter.delete("/:profileId", async (req, res, next) => {
+  try {
+    const selectedProfile = await UserModel.findByIdAndDelete(
+      req.params.profileId
+    );
 
-//     if (selectedProfile) {
-//       res.send("Profile deleted!");
-//     } else {
-//       res.send("Profile not found");
-//     }
+    if (selectedProfile) {
+      res.send("Profile deleted!");
+    } else {
+      res.send("Profile not found");
+    }
 
-//     res.status(201).send("DELETE BY ID");
-//   } catch (error) {
-//     next(error);
-//   }
-// });
+    res.status(201).send("DELETE BY ID");
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = profilesRouter;
