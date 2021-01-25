@@ -1,14 +1,23 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const PostModel = require("./schema");
+const UserModel = require("../profiles/schema")
 const postsRouter = express.Router();
 
 // - POST https://yourapi.herokuapp.com/api/posts/
 //     Creates a new post
-postsRouter.post("/", async (req, res, next) => {
+postsRouter.post("/:userId/", async (req, res, next) => {
   try {
-    res.status(201).send("POST");
+    //GET USER
+    const userId = req.params.userId
+    const user = await UserModel.findById(userId)
+    //POST
+    let body = {...req.body, user: user}
+    const newPost = new PostModel(body),
+        {_id} = await newPost.save()
+    res.status(201).send(newPost);
   } catch (error) {
+    console.log(error)
     next(error);
   }
 });
@@ -17,7 +26,17 @@ postsRouter.post("/", async (req, res, next) => {
 //     Retrieve posts
 postsRouter.get("/", async (req, res, next) => {
   try {
-    res.status(201).send("GET");
+    let posts
+    if (req.query && req.query.userId) {
+      //GET USER
+      const userId = req.query.userId
+      const user = await UserModel.findById(userId)
+      posts = await PostModel.find({user : userId})
+    } else {
+      posts = await PostModel.find()
+    } 
+    //GET POSTS
+    res.status(201).send(posts);
   } catch (error) {
     next(error);
   }
@@ -27,7 +46,8 @@ postsRouter.get("/", async (req, res, next) => {
 // Retrieves the specified post
 postsRouter.get("/:postId", async (req, res, next) => {
   try {
-    res.status(201).send("GET BY ID");
+    const post = await PostModel.findById(req.params.postId)
+    res.status(201).send(post);
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -44,7 +64,17 @@ postsRouter.get("/:postId", async (req, res, next) => {
 // Edit a given post
 postsRouter.put("/:postId", async (req, res, next) => {
   try {
-    res.status(201).send("UPDATE BY ID");
+    const post = await PostModel.findByIdAndUpdate(req.params.postId, req.body, {
+      runValidators: true,
+      new: true,
+    })
+    if (post) {
+      res.send(post)
+    } else {
+      const error = new Error(`post with id ${req.params.id} not found`)
+      error.httpStatusCode = 404
+      next(error)
+    }
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
@@ -61,7 +91,14 @@ postsRouter.put("/:postId", async (req, res, next) => {
 // Removes a post
 postsRouter.delete("/:postId", async (req, res, next) => {
   try {
-    res.status(201).send("DELETE BY ID");
+    const deletePost = await Posts.findByIdAndDelete(req.params.postId)
+    if (deletePost) {
+      res.send("DELETE BY ID");
+    } else {
+      const err = new Error(`Post with id : ${req.params.postId}`);
+      err.httpStatusCode = 404
+      next(err);
+    }
   } catch (error) {
     next(error);
   }
