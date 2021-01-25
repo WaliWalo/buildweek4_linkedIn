@@ -1,37 +1,78 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const PostModel = require("./schema");
-const postRouter = express.Router();
-
-// - POST https://yourapi.herokuapp.com/api/profile/:userName/experiences
+const ExperienceModel = require("./schema");
+const ProfileModel = require("../profiles/schema");
+const experienceRouter = express.Router();
+const { ExportToCsv } = require("export-to-csv");
+const { pipeline } = require("stream");
+const experienceController = require("../../util/experienceController");
+// - POST https://yourapi.herokuapp.com/api/experiences/:userName/
 // Create an experience.
-postRouter.post("/:userId/experiences", async (req, res, next) => {
+experienceRouter.post("/:userId", async (req, res, next) => {
   try {
-    res.status(201).send("POST");
+    const user = await ProfileModel.findById(req.params.userId);
+    if (user) {
+      const newExperience = {
+        ...req.body,
+        user: new mongoose.Types.ObjectId(req.params.userId),
+      };
+      const newExperienceModel = new ExperienceModel(newExperience);
+      const result = await newExperienceModel.save();
+      res.status(201).send(result);
+    } else {
+      let error = new Error("USER NOT FOUND");
+      error.httpStatusCode = 404;
+      next(error);
+    }
   } catch (error) {
     next(error);
   }
 });
 
-// - GET https://yourapi.herokuapp.com/api/profile/userName/experiences
+// - GET https://yourapi.herokuapp.com/api/experiences/userName/experiences
 // Get user experiences
-postRouter.get("/:userId/experiences", async (req, res, next) => {
+experienceRouter.get("/:userId", async (req, res, next) => {
   try {
-    res.status(201).send("GET");
+    const experiences = await ExperienceModel.find({
+      user: req.params.userId,
+    });
+    if (experiences) {
+      res.status(201).send(experiences);
+    } else {
+      let error = new Error("USER NOT FOUND");
+      error.httpStatusCode = 404;
+      next(error);
+    }
   } catch (error) {
     next(error);
   }
 });
 
-// - GET https://yourapi.herokuapp.com/api/profile/userName/experiences/:expId
+// - GET https://yourapi.herokuapp.com/api/experiences/userName/experiences/:expId
 // Get a specific experience
-postRouter.get("/:userId/experiences/:expId", async (req, res, next) => {
+experienceRouter.get("/:userId/:expId", async (req, res, next) => {
   try {
-    res.status(201).send("GET BY ID");
+    const user = await ProfileModel.findById(req.params.userId);
+    if (user) {
+      const experience = await ExperienceModel.find({
+        _id: req.params.expId,
+      }).populate("user");
+      if (experience) {
+        res.status(201).send(experience);
+      } else {
+        let error = new Error("EXPERIENCE NOT FOUND");
+        error.httpStatusCode = 404;
+        next(error);
+      }
+    } else {
+      let error = new Error("USER NOT FOUND");
+      error.httpStatusCode = 404;
+      next(error);
+    }
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
-      err.message = "Product Not Found";
+      err.message = "USER Not Found";
       err.httpStatusCode = 404;
       next(err);
     } else {
@@ -40,15 +81,33 @@ postRouter.get("/:userId/experiences/:expId", async (req, res, next) => {
   }
 });
 
-// - PUT https://yourapi.herokuapp.com/api/profile/userName/experiences/:expId
+// - PUT https://yourapi.herokuapp.com/api/experiences/userName/experiences/:expId
 // Get and update specific experience
-postRouter.put("/:userId/experiences/:expId", async (req, res, next) => {
+experienceRouter.put("/:userId/:expId", async (req, res, next) => {
   try {
-    res.status(201).send("UPDATE BY ID");
+    const user = await ProfileModel.findById(req.params.userId);
+    if (user) {
+      const experience = await ExperienceModel.findByIdAndUpdate(
+        req.params.expId,
+        req.body,
+        { new: true, useFindAndModify: false }
+      );
+      if (experience) {
+        res.status(201).send(experience);
+      } else {
+        let error = new Error("EXPERIENCE NOT FOUND");
+        error.httpStatusCode = 404;
+        next(error);
+      }
+    } else {
+      let error = new Error("USER NOT FOUND");
+      error.httpStatusCode = 404;
+      next(error);
+    }
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
-      err.message = "Product Not Found";
+      err.message = "User Not Found";
       err.httpStatusCode = 404;
       next(err);
     } else {
@@ -57,27 +116,79 @@ postRouter.put("/:userId/experiences/:expId", async (req, res, next) => {
   }
 });
 
-// - DELETE https://yourapi.herokuapp.com/api/profile/userName/experiences/:expId
+// - DELETE https://yourapi.herokuapp.com/api/experiences/userName/experiences/:expId
 //     Get a specific experience
-postRouter.delete("/:userId/experiences/:expId", async (req, res, next) => {
+experienceRouter.delete("/:userId/:expId", async (req, res, next) => {
   try {
+    const user = await ProfileModel.findById(req.params.userId);
+    if (user) {
+      const experience = await ExperienceModel.findByIdAndRemove(
+        req.params.expId
+      );
+      if (experience) {
+        res.status(201).send(`${experience._id} REMOVED`);
+      } else {
+        let error = new Error("EXPERIENCE NOT FOUND");
+        error.httpStatusCode = 404;
+        next(error);
+      }
+    } else {
+      let error = new Error("USER NOT FOUND");
+      error.httpStatusCode = 404;
+      next(error);
+    }
     res.status(201).send("DELETE BY ID");
   } catch (error) {
     next(error);
   }
 });
 
-// - POST https://yourapi.herokuapp.com/api/profile/userName/experiences/:expId/picture
+const multer = require("multer");
+const cloudinary = require("../cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "Strive Products",
+  },
+});
+
+const cloudinaryMulter = multer({ storage: storage });
+
+// - POST https://yourapi.herokuapp.com/api/experiences/userName/experiences/:expId/picture
 //     Change the experience picture
-postRouter.post(
-  "/:userId/experiences/:expId/picture",
+experienceRouter.post(
+  "/:userId/:expId/picture",
+  cloudinaryMulter.single("image"),
   async (req, res, next) => {
     try {
-      res.status(201).send("POST A PHOTO BY ID");
+      const user = await ProfileModel.findById(req.params.userId);
+      if (user) {
+        const experience = await ExperienceModel.find({
+          _id: req.params.expId,
+        });
+        if (experience) {
+          const updateExperience = await ExperienceModel.findByIdAndUpdate(
+            req.params.expId,
+            { $set: { image: req.file.path } },
+            { new: true, useFindAndModify: false }
+          );
+          res.status(201).send(updateExperience);
+        } else {
+          let error = new Error("EXPERIENCE NOT FOUND");
+          error.httpStatusCode = 404;
+          next(error);
+        }
+      } else {
+        let error = new Error("USER NOT FOUND");
+        error.httpStatusCode = 404;
+        next(error);
+      }
     } catch (error) {
       const err = new Error();
       if (error.name == "CastError") {
-        err.message = "Product Not Found";
+        err.message = "Experience Not Found";
         err.httpStatusCode = 404;
         next(err);
       } else {
@@ -87,21 +198,8 @@ postRouter.post(
   }
 );
 
-// - GET https://yourapi.herokuapp.com/api/profile/userName/experiences/CSV
+// - GET https://yourapi.herokuapp.com/api/experiences/userName/experiences/CSV
 // Download the experiences as a CSV
-postRouter.get("/:userId/experiences/csv", async (req, res, next) => {
-  try {
-    res.status(201).send("get a csv by id");
-  } catch (error) {
-    const err = new Error();
-    if (error.name == "CastError") {
-      err.message = "Product Not Found";
-      err.httpStatusCode = 404;
-      next(err);
-    } else {
-      next(error);
-    }
-  }
-});
+experienceRouter.get("/:userId/experiences/csv", experienceController.download);
 
-module.exports = postRouter;
+module.exports = experienceRouter;
