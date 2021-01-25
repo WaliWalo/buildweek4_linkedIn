@@ -95,41 +95,42 @@ profilesRouter.put("/:profileId", async (req, res, next) => {
 
 // - POST https://yourapi.herokuapp.com/api/profile/{userId}/picture
 // Replace user profile picture (name = profile)
-profilesRouter.get("/:profileId/picture/", async (req, res, next) => {
-  try {
-    //The profile we take
-    const selectedProfile = await UserModel.findById(req.params.profileId);
-    const selectedImage = selectedProfile.image;
+profilesRouter.post(
+  "/:profileId/picture/",
+  cloudinaryMulter.single("image"),
+  async (req, res, next) => {
+    try {
+      const profile = await UserModel.findById(req.params.profileId);
 
-    res.status(201).send(selectedImage);
-  } catch (error) {
-    const err = new Error();
-    if (error.name == "CastError") {
-      err.message = "Product Not Found";
-      err.httpStatusCode = 404;
-      next(err);
-    } else {
-      next(error);
+      if (profile) {
+        const updateProfile = await UserModel.findByIdAndUpdate(
+          req.params.profileId,
+          { $set: { image: req.file.path } },
+          { new: true, useFindAndModify: false }
+        );
+        res.status(201).send(updateProfile);
+      } else {
+        let error = new Error("EXPERIENCE NOT FOUND");
+        error.httpStatusCode = 404;
+        next(error);
+      }
+      res.status(201).send(selectedImage);
+    } catch (error) {
+      const err = new Error();
+      if (error.name == "CastError") {
+        err.message = "Product Not Found";
+        err.httpStatusCode = 404;
+        next(err);
+      } else {
+        next(error);
+      }
     }
   }
-});
+);
 
 // - GET https://yourapi.herokuapp.com/api/profile/{userId}/CV
 // Generates and download a PDF with the CV of the user (details, picture, experiences)
-profilesRouter.get("/:profileId/cv", async (req, res, next) => {
-  try {
-    res.status(201).send("GET CSV AND DOWNLOAD");
-  } catch (error) {
-    const err = new Error();
-    if (error.name == "CastError") {
-      err.message = "Product Not Found";
-      err.httpStatusCode = 404;
-      next(err);
-    } else {
-      next(error);
-    }
-  }
-});
+profilesRouter.get("/:profileId/cv", pdfController.download);
 
 profilesRouter.delete("/:profileId", async (req, res, next) => {
   try {
