@@ -24,7 +24,9 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemon": "^2.0.7",
     "pdfkit": "^0.11.0",
+
     "pdfmake": "^0.1.70",
+
     "stream": "0.0.2"
   }
 }
