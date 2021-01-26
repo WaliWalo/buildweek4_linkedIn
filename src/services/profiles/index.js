@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const UserModel = require("./schema");
 const profilesRouter = express.Router();
-
+const pdf = require("../../util/pdfController")
 const multer = require("multer");
 const cloudinary = require("../cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
@@ -133,6 +133,18 @@ profilesRouter.post(
   }
 );
 
+
+profilesRouter.get("/cv/:id", async (req,res,next) => {
+  try {
+
+    const cv = pdf.generateCV({ name: "Manuel", lastName: "Desole" })
+    cv.pipe(res)
+    cv.end()
+   }
+  catch (e) {
+    res.status(400).send(e.message)
+  }
+})
 // - GET https://yourapi.herokuapp.com/api/profile/{userId}/CV
 // Generates and download a PDF with the CV of the user (details, picture, experiences)
 // profilesRouter.get("/:profileId/cv", pdfController.download);
