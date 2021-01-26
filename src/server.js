@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const profilesRouter = require("./services/profiles");
 const experiencesRouter = require("./services/experiences");
 const postsRouter = require("./services/posts");
+const commentsRouter = require("./services/comments");
 
 const {
   notFoundHandler,
@@ -25,6 +26,7 @@ server.use(cors());
 server.use("/profiles", profilesRouter);
 server.use("/experiences", experiencesRouter);
 server.use("/posts", postsRouter);
+server.use("/comments", commentsRouter);
 
 // ERROR HANDLERS MIDDLEWARES
 
@@ -44,4 +46,4 @@ mongoose
       console.log("Running on port", port);
     })
   )
-  .catch(err => console.log(err));
+  .catch((err) => console.log(err));
