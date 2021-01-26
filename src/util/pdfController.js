@@ -49,4 +49,4 @@ const generatePdf = async data => {
 
 controller.download = async (req, res, next) => {};
 
-module.exports = controller;
+module.exports = [generatePdf, controller];

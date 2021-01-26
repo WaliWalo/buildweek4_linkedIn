@@ -112,6 +112,7 @@ profilesRouter.post(
           { $set: { image: req.file.path } },
           { new: true, useFindAndModify: false }
         );
+
         //*SEND the profile updated
         res.status(201).send(updateProfile);
       } else {
