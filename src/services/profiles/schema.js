@@ -15,12 +15,13 @@ const { Schema, model } = require("mongoose");
 // }
 const ProfileSchema = new Schema(
   {
+    _id: { type: Schema.Types.ObjectId, required: true },
     name: {
       type: String,
       required: true,
     },
     surname: { type: String, required: true, lowercase: true },
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     bio: { type: String, required: true },
     area: { type: String, required: true },
     username: { type: String, required: true },

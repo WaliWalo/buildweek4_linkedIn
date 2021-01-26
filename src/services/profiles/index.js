@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const UserModel = require("./schema");
 const profilesRouter = express.Router();
-const pdf = require("../../util/pdfController")
+const pdf = require("../../util/pdfController");
 const multer = require("multer");
 const cloudinary = require("../cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
@@ -18,21 +18,20 @@ const cloudinaryMulter = multer({ storage: storage });
 
 // - POST https://yourapi.herokuapp.com/api/profile/
 // Create the user profile with all his details
-profilesRouter.post(
-  "/",
-  cloudinaryMulter.single("image"),
-  async (req, res, next) => {
-    try {
-      console.log("req file", req.file.path);
-      const newProfile = new UserModel(req.body);
-      newProfile.image = req.file.path;
-      const { _id } = await newProfile.save();
-      res.status(201).send(_id);
-    } catch (error) {
-      next(error);
-    }
+profilesRouter.post("/", async (req, res, next) => {
+  try {
+    let profile = {
+      ...req.body,
+      _id: new mongoose.Types.ObjectId(req.body._id),
+    };
+    const newProfile = new UserModel(profile);
+    console.log(newProfile);
+    const { _id } = await newProfile.save();
+    res.status(201).send(_id);
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 // - GET https://yourapi.herokuapp.com/api/profile/
 //     Retrieves list of profiles
@@ -52,12 +51,19 @@ profilesRouter.get("/", async (req, res, next) => {
 profilesRouter.get("/:profileId", async (req, res, next) => {
   try {
     const selectedProfile = await UserModel.findById(req.params.profileId);
-
-    res.status(201).send(selectedProfile);
+    console.log(selectedProfile);
+    if (selectedProfile) {
+      res.status(201).send(selectedProfile);
+    } else {
+      const err = new Error();
+      err.message = "Profile Not Found";
+      err.httpStatusCode = 404;
+      next(err);
+    }
   } catch (error) {
     const err = new Error();
     if (error.name == "CastError") {
-      err.message = "Product Not Found";
+      err.message = "Profile Not Found";
       err.httpStatusCode = 404;
       next(err);
     } else {
@@ -133,18 +139,15 @@ profilesRouter.post(
   }
 );
 
-
-profilesRouter.get("/cv/:id", async (req,res,next) => {
+profilesRouter.get("/cv/:id", async (req, res, next) => {
   try {
-
-    const cv = pdf.generateCV({ name: "Manuel", lastName: "Desole" })
-    cv.pipe(res)
-    cv.end()
-   }
-  catch (e) {
-    res.status(400).send(e.message)
+    const cv = pdf.generateCV({ name: "Manuel", lastName: "Desole" });
+    cv.pipe(res);
+    cv.end();
+  } catch (e) {
+    res.status(400).send(e.message);
   }
-})
+});
 // - GET https://yourapi.herokuapp.com/api/profile/{userId}/CV
 // Generates and download a PDF with the CV of the user (details, picture, experiences)
 // profilesRouter.get("/:profileId/cv", pdfController.download);
