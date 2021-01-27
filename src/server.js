@@ -3,11 +3,13 @@ const cors = require("cors");
 const { join } = require("path");
 const listEndpoints = require("express-list-endpoints");
 const mongoose = require("mongoose");
+// const Pusher = require('pusher')
 
 const profilesRouter = require("./services/profiles");
 const experiencesRouter = require("./services/experiences");
 const postsRouter = require("./services/posts");
 const commentsRouter = require("./services/comments");
+const chatBoxRoute = require("./services/chatbox")
 
 const {
   notFoundHandler,
@@ -19,6 +21,15 @@ const server = express();
 
 const port = process.env.PORT;
 
+// //CHATBOX SIDESERVER
+// const pusher = new Pusher({ 
+//   appId: process.env.PUSHER_APP_ID,
+//   key: process.env.PUSHER_KEY,
+//   secret: process.env.PUSHER_SECRET,
+//   cluster: process.env.PUSHER_CLUSTER,
+//   encrypted: true
+// })
+
 server.use(express.json());
 
 server.use(cors());
@@ -27,6 +38,7 @@ server.use("/profiles", profilesRouter);
 server.use("/experiences", experiencesRouter);
 server.use("/posts", postsRouter);
 server.use("/comments", commentsRouter);
+server.use('/chat', chatBoxRoute)
 
 // ERROR HANDLERS MIDDLEWARES
 

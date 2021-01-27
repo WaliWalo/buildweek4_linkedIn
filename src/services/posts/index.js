@@ -38,7 +38,7 @@ postsRouter.get("/", async (req, res, next) => {
       console.log(userId)
       posts = await PostModel.find({user : userId}).populate('user')
     } else {
-      posts = await PostModel.find()
+      posts = await PostModel.find().populate('user')
     } 
     //GET POSTS
     res.status(201).send(posts);
