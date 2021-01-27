@@ -38,7 +38,7 @@ commentsRouter.get("/:postId", async (req, res, next) => {
         post: req.params.postId,
       })
       .populate({ path: "post", select: "text" })
-      .populate({ path: "user", select: "name" });
+      .populate({ path: "user", select: ["name", "image"] });
     if (comments) {
       res.status(201).send(comments);
     } else {
