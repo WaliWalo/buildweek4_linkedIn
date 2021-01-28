@@ -9,7 +9,8 @@ const profilesRouter = require("./services/profiles");
 const experiencesRouter = require("./services/experiences");
 const postsRouter = require("./services/posts");
 const commentsRouter = require("./services/comments");
-const chatBoxRoute = require("./services/chatbox")
+const chatBoxRoute = require("./services/chatbox");
+const reactionsRouter = require("./services/reactions");
 
 const {
   notFoundHandler,
@@ -22,7 +23,7 @@ const server = express();
 const port = process.env.PORT;
 
 // //CHATBOX SIDESERVER
-// const pusher = new Pusher({ 
+// const pusher = new Pusher({
 //   appId: process.env.PUSHER_APP_ID,
 //   key: process.env.PUSHER_KEY,
 //   secret: process.env.PUSHER_SECRET,
@@ -38,7 +39,8 @@ server.use("/profiles", profilesRouter);
 server.use("/experiences", experiencesRouter);
 server.use("/posts", postsRouter);
 server.use("/comments", commentsRouter);
-server.use('/chat', chatBoxRoute)
+server.use("/chat", chatBoxRoute);
+server.use("/reactions", reactionsRouter);
 
 // ERROR HANDLERS MIDDLEWARES
 
@@ -52,6 +54,7 @@ mongoose
   .connect(process.env.MONGO_CONNECTION, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    useCreateIndex: true,
   })
   .then(
     server.listen(port, () => {
