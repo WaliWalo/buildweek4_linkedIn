@@ -16,8 +16,12 @@ const chatBoxRoute = express.Router()
 
 chatBoxRoute.post('/', async (req, res, next) => {
     try {
-        const payload = req.body
-        pusher.trigger('chat', 'message', payload)
+        const payload = req.body.message
+        const chat = {
+            chat: req.body.chat
+        }
+        console.log('payload', payload, 'chat', chat)
+        pusher.trigger(`${chat.chat}`, 'message', payload)
         res.send(payload)
     } catch (error) {
         console.log(error)

@@ -102,7 +102,7 @@ postsRouter.put("/:postId", async (req, res, next) => {
 // Removes a post
 postsRouter.delete("/:postId", async (req, res, next) => {
   try {
-    const deletePost = await Posts.findByIdAndDelete(req.params.postId);
+    const deletePost = await PostModel.findByIdAndRemove(req.params.postId);
     if (deletePost) {
       res.send("DELETE BY ID");
     } else {
