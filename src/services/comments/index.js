@@ -51,6 +51,26 @@ commentsRouter.get("/:postId", async (req, res, next) => {
   }
 });
 
+// - GET https://yourapi.herokuapp.com/api/comments/:commentId
+// Get comments
+commentsRouter.get("/:commentId/getById", async (req, res, next) => {
+  try {
+    const comments = await commentModel
+      .findById(req.params.commentId)
+      .populate({ path: "post", select: "text" })
+      .populate({ path: "user", select: ["name", "image"] });
+    if (comments) {
+      res.status(201).send(comments);
+    } else {
+      let error = new Error("POST NOT FOUND");
+      error.httpStatusCode = 404;
+      next(error);
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 // - PUT https://yourapi.herokuapp.com/api/comments/:commentId
 // Get and update specific comment
 commentsRouter.put("/:commentId", async (req, res, next) => {
