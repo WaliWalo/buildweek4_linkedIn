@@ -39,7 +39,10 @@ reactionsRouter.get("/:postId", async (req, res, next) => {
       },
       { $group: { _id: "$react", count: { $sum: 1 } } },
     ]);
-    let reactionsWithCount = { ...reactions, reactCounts: reactCount };
+    let reactionsWithCount = {
+      reactions: [...reactions],
+      reactCounts: reactCount,
+    };
 
     if (reactions.length === 0) {
       let error = new Error("POST NOT FOUND");
