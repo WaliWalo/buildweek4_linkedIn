@@ -20,7 +20,7 @@ const ReactionSchema = new Schema(
       ref: "Posts",
       unique: false,
     },
-    react: { type: Number, min: 1, max: 3, required: true },
+    react: { type: Number, min: 1, max: 6, required: true },
   },
   {
     timestamps: false,
