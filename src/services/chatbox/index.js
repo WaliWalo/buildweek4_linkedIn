@@ -13,27 +13,18 @@ const pusher = new Pusher({
 
 const chatBoxRoute = express.Router()
 
-chatBoxRoute.post('/', async (req, res, next) => {
+chatBoxRoute.post('/:chatId', async (req, res, next) => {
     try {
-        const payload = req.body.message
-        const chat = {
-            chat: req.body.chat
-        }
-        console.log('payload', payload, 'chat', chat)
-        pusher.trigger(`${chat.chat}`, 'message', payload)
+        const payload = req.body
+        const chatId = req.params.chatId
+        console.log('payload', payload, 'chat', chatId)
+        pusher.trigger(`${chatId}`, `${chatId}`, payload)
         res.send(payload)
     } catch (error) {
         console.log(error)
         next(error)
     }
 })
-
-// chatBoxRoute.post('/', (req, res) => {
-//     const payload = req.body;
-//     console.log('payload', payload)
-//     pusher.trigger('chat', 'message', payload);
-//     res.send(payload)
-//   });
 
 
 
