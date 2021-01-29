@@ -51,12 +51,14 @@ commentsRouter.get("/:postId", async (req, res, next) => {
   }
 });
 
-// - GET https://yourapi.herokuapp.com/api/comments/:commentId
+// - GET https://yourapi.herokuapp.com/api/comments/:postId
 // Get comments
-commentsRouter.get("/:commentId/getById", async (req, res, next) => {
+commentsRouter.get("/:postId/:userId/:commentId", async (req, res, next) => {
   try {
-    const comments = await commentModel
-      .findById(req.params.commentId)
+    const comment = await commentModel
+      .findById({
+        post: [...req.params.postId, req.params.userId],
+      })
       .populate({ path: "post", select: "text" })
       .populate({ path: "user", select: ["name", "image"] });
     if (comments) {

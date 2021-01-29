@@ -141,9 +141,16 @@ profilesRouter.post(
 
 profilesRouter.get("/cv/:id", async (req, res, next) => {
   try {
-    const cv = pdf.generateCV({ name: "Manuel", lastName: "Desole" });
-    cv.pipe(res);
-    cv.end();
+    //
+    const profile = await UserModel.findById(req.params.id);
+    if (profile) {
+      const cv = pdf.generateCV(profile);
+      res.attachment(`${profile.name}-cv.pdf`);
+      cv.pipe(res);
+      cv.end();
+    } else {
+      res.status(404).send({ message: "This person is not in db!" });
+    }
   } catch (e) {
     res.status(400).send(e.message);
   }
